@@ -12,23 +12,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.viikko1.domain.mockTasks
 import com.example.viikko1.ui.theme.Viikko1Theme
-import com.example.viikko1.domain.filterByDone
-import com.example.viikko1.domain.sortByDueDate
-import com.example.viikko1.domain.toggleDone
+import com.example.viikko1.domain.TaskViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.lazy.items
+
+
+
+
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,48 +45,83 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+@Composable
+fun NameTextField(
+    name: String,
+    onNameChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = { Text("Name") },
+
+    )
+}
+
+
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
-    var allTasks by remember { mutableStateOf(mockTasks) }
-    var filterType by remember { mutableStateOf("All") }
-
-    val tasksToShow = when (filterType) {
-        "Done" -> filterByDone(allTasks, true)
-        "Todo" -> filterByDone(allTasks, false)
-        else -> allTasks
-    }
-
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    viewModel: TaskViewModel = viewModel()
+) {
     Column(modifier = modifier.padding(16.dp)) {
-        Text(text = "Current View: $filterType")
-        
+
+        NameTextField(
+            name = viewModel.name,
+            onNameChange = viewModel::onNameChange
+        )
+
         Spacer(modifier = Modifier.height(8.dp))
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Button(onClick = { filterType = "All" }) { Text("All") }
-            Button(onClick = { filterType = "Done" }) { Text("Done") }
-            Button(onClick = { filterType = "Todo" }) { Text("Todo") }
-            Button(onClick = { allTasks = sortByDueDate(allTasks) }) { Text("Sort") }
+        Button(
+            onClick = { viewModel.addTask() },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Add Task")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        tasksToShow.forEach { task ->
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = "${task.title} (${task.dueDate}) - ${if(task.done) "Done" else "ToDo"}")
-                Spacer(Modifier.weight(1f))
-                Button(onClick = { 
-                    allTasks = toggleDone(allTasks, task.id) 
-                }) {
-                    Text("Toggle")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Button(onClick = { viewModel.filterType = "All" }) { Text("All") }
+            Button(onClick = { viewModel.filterType = "Done" }) { Text("Done") }
+            Button(onClick = { viewModel.filterType = "Todo" }) { Text("Todo") }
+            Button(onClick = { viewModel.sortTasks() }) { Text("Sort") }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            items(viewModel.filterTasks(viewModel.filterType)) { task ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${task.title} (${task.dueDate}) - ${if (task.done) "Done" else "ToDo"}"
+                    )
+
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Button(onClick = { viewModel.toggleDone(task.id) }) {
+                            Text("Change Status")
+                        }
+                        Button(onClick = { viewModel.deleteTask(task.id) }) {
+                            Text("Delete")
+                        }
+                    }
                 }
             }
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
