@@ -1,7 +1,9 @@
-package com.example.viikko1.domain
+package com.example.viikko1.domain.Model
 
-fun addTask(list: List<Task>, newtask: Task): List<Task> {
-    return list + newtask
+import com.example.viikko1.domain.Model.Task
+
+fun addTask(list: List<Task>, newTask: Task): List<Task> {
+    return list + newTask
 }
 
 fun toggleDone(list: List<Task>, id: Int): List<Task> {
@@ -24,4 +26,14 @@ fun sortByDueDate(list: List<Task>): List<Task> {
 
 fun deleteTask(list: List<Task>, id: Int): List<Task> {
     return list.filter { it.id != id }
+}
+
+fun updateTask(list: List<Task>, updatedTask: Task): List<Task> {
+    return list.map { task ->
+        if (task.id == updatedTask.id) {
+            updatedTask
+        } else {
+            task
+        }
+    }
 }
