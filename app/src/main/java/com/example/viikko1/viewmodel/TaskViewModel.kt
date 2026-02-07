@@ -49,7 +49,7 @@ class TaskViewModel : ViewModel() {
             done = false
         )
         _allTasks.value = com.example.viikko1.model.addTask(allTasks.value, newTask)
-        name = "" // clear the input
+        name = ""
     }
 
     fun toggleDone(taskId: Int) {

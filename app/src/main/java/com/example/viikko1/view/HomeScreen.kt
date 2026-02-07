@@ -108,7 +108,7 @@ fun HomeScreen(
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)
                             .clickable {
-                                viewModel.openTask(task.id) // Opens via ViewModel
+                                viewModel.openTask(task.id)
                             },
                         colors = CardDefaults.cardColors(
                             containerColor = if (task.done) Color(0xFFD6FFD6) else Color.White

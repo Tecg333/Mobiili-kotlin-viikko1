@@ -55,7 +55,7 @@ fun AddTaskDialog(
                                     calendar.get(Calendar.YEAR)
                                 )
                             }
-                            showDatePicker = false // Close date picker after selection
+                            showDatePicker = false
                         },
                         onDismiss = { showDatePicker = false }
                     )

@@ -48,7 +48,7 @@ import java.util.Calendar
 @Composable
 fun CalendarScreen(
     viewModel: TaskViewModel,
-    onTaskClick: (Int) -> Unit = {},   // callback when a task is clicked
+    onTaskClick: (Int) -> Unit = {},
     onNavigateHome: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -56,12 +56,12 @@ fun CalendarScreen(
     val selectedTask by viewModel.selectedTask.collectAsState()
     val showAddDialog by viewModel.addTaskDialogVisible.collectAsState()
 
-    // 1️⃣ Group tasks by dueDate
+    //Group tasks by dueDate
     val grouped = tasks.groupBy { it.dueDate ?: "No date" }
 
     Column(modifier = Modifier.padding(16.dp)) {
 
-        // 2️⃣ Top App Bar with Home + Add buttons
+
         TopAppBar(
             title = { Text("Calendar") },
 
@@ -81,7 +81,7 @@ fun CalendarScreen(
             }
         )
 
-        // 3️⃣ LazyColumn for tasks grouped by date
+        //LazyColumn for tasks grouped by date
         LazyColumn {
             grouped.forEach { (date, tasksOfDay) ->
 
@@ -105,14 +105,14 @@ fun CalendarScreen(
         }
     }
 
-    // 4️⃣ Add Task Dialog
+    //Add Task Dialog
     if (showAddDialog) {
         AddTaskDialog(
             viewModel = viewModel,
             onDismiss = { viewModel.addTaskDialogVisible.value = false }
         )
     }
-    // 5️⃣ Detail/Edit dialog for selected task
+    //Edit dialog for selected task
     selectedTask?.let { task ->
         EditTaskDialog(
             task = task,
@@ -125,11 +125,11 @@ fun CalendarScreen(
                     newDueDate = newDueDate,
                     done = newDone
                 )
-                viewModel.closeTask() // dismiss dialog after saving
+                viewModel.closeTask()
             },
             onDelete = { id ->
                 viewModel.deleteTask(id)
-                viewModel.closeTask() // dismiss dialog after deleting
+                viewModel.closeTask()
             }
         )
     }
@@ -162,4 +162,3 @@ fun CalendarTaskCard(
         }
     }
 }
-

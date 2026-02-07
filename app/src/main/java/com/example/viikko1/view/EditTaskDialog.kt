@@ -37,7 +37,7 @@ fun EditTaskDialog(
     var showDatePicker by remember { mutableStateOf(false) }
 
     AlertDialog(
-        onDismissRequest = onDismiss, // <-- simply call the lambda
+        onDismissRequest = onDismiss,
         title = { Text("Edit Task") },
         text = {
             Column {
@@ -86,8 +86,8 @@ fun EditTaskDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    onSave(title, description, dueDate, done) // <- send data back
-                    onDismiss() // <- close dialog
+                    onSave(title, description, dueDate, done)
+                    onDismiss()
                 }
             ) {
                 Text("Save")
