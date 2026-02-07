@@ -1,6 +1,4 @@
-package com.example.viikko1.domain.Model
-
-import com.example.viikko1.domain.Model.Task
+package com.example.viikko1.model
 
 fun addTask(list: List<Task>, newTask: Task): List<Task> {
     return list + newTask
