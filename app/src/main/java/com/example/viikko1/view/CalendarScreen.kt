@@ -1,31 +1,15 @@
 package com.example.viikko1.view
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.DatePicker
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.items
@@ -37,9 +21,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
-import com.example.viikko1.model.Task
+import com.example.viikko1.data.model.Task
 import com.example.viikko1.viewmodel.TaskViewModel
 import java.util.Calendar
 
@@ -56,20 +39,25 @@ fun CalendarScreen(
     val selectedTask by viewModel.selectedTask.collectAsState()
     val showAddDialog by viewModel.addTaskDialogVisible.collectAsState()
 
-    //Group tasks by dueDate
-    val grouped = tasks.groupBy { it.dueDate ?: "No date" }
+    // 1️⃣ Group tasks by formatted dueDate
+    val grouped = tasks.groupBy { task ->
+        task.dueDate?.let { millis ->
+            val cal = Calendar.getInstance().apply { timeInMillis = millis }
+            "%02d.%02d.%04d".format(
+                cal.get(Calendar.DAY_OF_MONTH),
+                cal.get(Calendar.MONTH) + 1,
+                cal.get(Calendar.YEAR)
+            )
+        } ?: "No date"
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
-
-
         TopAppBar(
             title = { Text("Calendar") },
-
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Go back")
                 }
-
             },
             actions = {
                 IconButton(onClick = onNavigateHome) {
@@ -81,11 +69,9 @@ fun CalendarScreen(
             }
         )
 
-        //LazyColumn for tasks grouped by date
+        // 2️⃣ LazyColumn for tasks grouped by date
         LazyColumn {
             grouped.forEach { (date, tasksOfDay) ->
-
-                // Date header
                 item {
                     Text(
                         text = date,
@@ -94,37 +80,31 @@ fun CalendarScreen(
                     )
                 }
 
-                // Tasks for this date
                 items(tasksOfDay) { task ->
                     CalendarTaskCard(
                         task = task,
-                        onTaskClick = onTaskClick
+                        onTaskClick = { onTaskClick(task.id) }
                     )
                 }
             }
         }
     }
 
-    //Add Task Dialog
+    // 3️⃣ Add Task Dialog
     if (showAddDialog) {
         AddTaskDialog(
             viewModel = viewModel,
             onDismiss = { viewModel.addTaskDialogVisible.value = false }
         )
     }
-    //Edit dialog for selected task
+
+    // 4️⃣ Edit dialog for selected task
     selectedTask?.let { task ->
         EditTaskDialog(
             task = task,
             onDismiss = { viewModel.closeTask() },
-            onSave = { newTitle, newDescription, newDueDate, newDone ->
-                viewModel.updateTask(
-                    taskId = task.id,
-                    newTitle = newTitle,
-                    newDescription = newDescription,
-                    newDueDate = newDueDate,
-                    done = newDone
-                )
+            onSave = { title, desc, date, completed ->
+                viewModel.updateTask(task.id, title, desc, date, completed)
                 viewModel.closeTask()
             },
             onDelete = { id ->
@@ -133,25 +113,20 @@ fun CalendarScreen(
             }
         )
     }
-
 }
-
-
-
-
 
 @Composable
 fun CalendarTaskCard(
     task: Task,
-    onTaskClick: (Int) -> Unit
+    onTaskClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .padding(vertical = 4.dp)
             .fillMaxWidth()
-            .clickable { onTaskClick(task.id) },
+            .clickable { onTaskClick() },
         colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = if (task.done) androidx.compose.ui.graphics.Color(0xFFD6FFD6) else androidx.compose.ui.graphics.Color.White
+            containerColor = if (task.isCompleted) androidx.compose.ui.graphics.Color(0xFFD6FFD6) else androidx.compose.ui.graphics.Color.White
         )
     ) {
         Column(modifier = Modifier.padding(12.dp)) {

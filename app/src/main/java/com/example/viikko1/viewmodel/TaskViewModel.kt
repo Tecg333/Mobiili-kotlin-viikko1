@@ -1,96 +1,81 @@
 package com.example.viikko1.viewmodel
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import com.example.viikko1.model.Task
-import com.example.viikko1.model.filterByDone
-import com.example.viikko1.model.sortByDueDate
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.example.viikko1.model.mockTasks
+import androidx.lifecycle.viewModelScope
+import com.example.viikko1.data.local.TaskDao
+import com.example.viikko1.data.model.Task
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
+class TaskViewModel(private val taskDao: TaskDao) : ViewModel() {
 
-class TaskViewModel : ViewModel() {
+    // Automatically updates UI when database changes
+    val allTasks: StateFlow<List<Task>> = taskDao.getAllTasks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    private val _allTasks = MutableStateFlow<List<Task>> (value = emptyList())
-
-    val allTasks: StateFlow<List<Task>> = _allTasks
-
-    init {
-        _allTasks.value = mockTasks
-    }
     private val _selectedTask = MutableStateFlow<Task?>(null)
-
     val selectedTask: StateFlow<Task?> = _selectedTask
 
-    val addTaskDialogVisible = MutableStateFlow<Boolean>(value = false)
+    val addTaskDialogVisible = MutableStateFlow(false)
 
+    var filterType = MutableStateFlow("All")
 
-    var name by mutableStateOf("")
-        private set
-
-    var filterType by mutableStateOf("All")
-
-    fun onNameChange(newName: String) {
-        name = newName
-    }
-
-    fun addTask(title: String, description: String, dueDate: String) {
-        if (name.isBlank()) return
-        val newTask = Task(
-            id = _allTasks.value.size + 1,
-            title = name,
-            description = description,
-            priority = 1,
-            dueDate = dueDate,
-            done = false
-        )
-        _allTasks.value = com.example.viikko1.model.addTask(allTasks.value, newTask)
-        name = ""
-    }
-
-    fun toggleDone(taskId: Int) {
-        _allTasks.value = com.example.viikko1.model.toggleDone(allTasks.value, taskId)
-    }
-
-    fun sortTasks() {
-        _allTasks.value = sortByDueDate(_allTasks.value)
-    }
-
-    fun filterTasks(filterType: String): List<Task> {
-        return when (filterType) {
-            "Done" -> filterByDone(_allTasks.value, true)
-            "Todo" -> filterByDone(_allTasks.value, false)
-            else -> _allTasks.value
+    fun addTask(title: String, description: String, dueDate: Long?) {
+        viewModelScope.launch {
+            val newTask = Task(
+                title = title,
+                description = description,
+                dueDate = dueDate,
+                isCompleted = false
+            )
+            taskDao.insert(newTask)
         }
     }
+
+    fun toggleDone(task: Task) {
+        viewModelScope.launch {
+            taskDao.update(task.copy(isCompleted = !task.isCompleted))
+        }
+    }
+
     fun deleteTask(taskId: Int) {
-        _allTasks.value = com.example.viikko1.model.deleteTask(_allTasks.value, taskId)
+        viewModelScope.launch {
+            val task = taskDao.getTaskById(taskId)
+            if (task != null) {
+                taskDao.delete(task)
+            }
+        }
     }
 
-    fun updateTask(taskId: Int, newTitle: String, newDescription: String, newDueDate: String, done: Boolean) {
-        val updatedTask = _allTasks.value.firstOrNull { it.id == taskId }?.copy(
-            title = newTitle,
-            description = newDescription,
-            dueDate = newDueDate,
-            done = done
-        ) ?: return
-        _allTasks.value = com.example.viikko1.model.updateTask(_allTasks.value, updatedTask)
+    fun updateTask(taskId: Int, newTitle: String, newDescription: String, newDueDate: Long?, done: Boolean) {
+        viewModelScope.launch {
+            val task = taskDao.getTaskById(taskId)
+            if (task != null) {
+                val updatedTask = task.copy(
+                    title = newTitle,
+                    description = newDescription,
+                    dueDate = newDueDate,
+                    isCompleted = done
+                )
+                taskDao.update(updatedTask)
+            }
+        }
     }
-
-
 
     fun openTask(taskId: Int) {
-        val task = _allTasks.value.find { it.id == taskId }
-        _selectedTask.value = task
+        viewModelScope.launch {
+            _selectedTask.value = taskDao.getTaskById(taskId)
+        }
     }
-
 
     fun closeTask() {
         _selectedTask.value = null
     }
-
 }

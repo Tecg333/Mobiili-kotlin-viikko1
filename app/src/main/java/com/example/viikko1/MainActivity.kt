@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.viikko1.ui.theme.Viikko1Theme
@@ -17,17 +19,31 @@ import com.example.viikko1.routes.ROUTE_CALENDAR
 import com.example.viikko1.routes.ROUTE_HOME
 import com.example.viikko1.view.CalendarScreen
 import com.example.viikko1.viewmodel.TaskViewModel
+import com.example.viikko1.data.local.AppDatabase
 
 
 class MainActivity : ComponentActivity() {
 
-
     override fun onCreate(savedInstanceState: Bundle ?) {
         super.onCreate(savedInstanceState)
+        
+        // Initialize the database and DAO
+        val database = AppDatabase.getDatabase(applicationContext)
+        val taskDao = database.taskDao()
+
         enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
-            val viewModel: TaskViewModel = viewModel()
+            
+            // Create the ViewModel with a Factory to inject the DAO
+            val viewModel: TaskViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        @Suppress("UNCHECKED_CAST")
+                        return TaskViewModel(taskDao) as T
+                    }
+                }
+            )
 
             Viikko1Theme {
                 Scaffold {
@@ -40,12 +56,6 @@ class MainActivity : ComponentActivity() {
                         composable(ROUTE_HOME) {
                             HomeScreen(
                                 viewModel = viewModel,
-                                onTaskClick = { taskId ->
-                                    viewModel.openTask(taskId)
-                                },
-                                onAddClick = {
-                                    viewModel.addTaskDialogVisible.value = true
-                                },
                                 onNavigateToCalendar = { navController.navigate(ROUTE_CALENDAR) }
                             )
                         }
@@ -53,12 +63,8 @@ class MainActivity : ComponentActivity() {
                         composable(ROUTE_CALENDAR) {
                             CalendarScreen(
                                 viewModel = viewModel,
-                                onTaskClick = { taskId ->
-                                    viewModel.openTask(taskId)
-                                },
                                 onNavigateHome = { navController.navigate(ROUTE_HOME) },
                                 onBack = { navController.popBackStack() }
-
                             )
                         }
                     }

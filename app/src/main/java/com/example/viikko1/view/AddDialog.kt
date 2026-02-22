@@ -17,8 +17,21 @@ fun AddTaskDialog(
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var dueDate by remember { mutableStateOf("") }
+    var dueDateMillis by remember { mutableStateOf<Long?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
+
+    val dateDisplay = remember(dueDateMillis) {
+        if (dueDateMillis != null) {
+            val calendar = Calendar.getInstance().apply { timeInMillis = dueDateMillis!! }
+            "%02d.%02d.%04d".format(
+                calendar.get(Calendar.DAY_OF_MONTH),
+                calendar.get(Calendar.MONTH) + 1,
+                calendar.get(Calendar.YEAR)
+            )
+        } else {
+            "Select Due Date"
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -41,19 +54,14 @@ fun AddTaskDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(onClick = { showDatePicker = true }) {
-                    Text(if (dueDate.isEmpty()) "Select Due Date" else "Due Date: $dueDate")
+                    Text(if (dueDateMillis == null) "Select Due Date" else "Due Date: $dateDisplay")
                 }
 
                 if (showDatePicker) {
                     DatePickerModal(
                         onDateSelected = { millis ->
                             if (millis != null) {
-                                val calendar = Calendar.getInstance().apply { timeInMillis = millis }
-                                dueDate = "%02d.%02d.%04d".format(
-                                    calendar.get(Calendar.DAY_OF_MONTH),
-                                    calendar.get(Calendar.MONTH) + 1,
-                                    calendar.get(Calendar.YEAR)
-                                )
+                                dueDateMillis = millis
                             }
                             showDatePicker = false
                         },
@@ -65,10 +73,9 @@ fun AddTaskDialog(
         confirmButton = {
             Button(onClick = {
                 if (title.isNotBlank()) {
-                    viewModel.onNameChange(title)
-                    viewModel.addTask(title, description, dueDate)
+                    viewModel.addTask(title, description, dueDateMillis)
                 }
-                onDismiss() // Close AddTaskDialog
+                onDismiss()
             }) {
                 Text("Save")
             }
