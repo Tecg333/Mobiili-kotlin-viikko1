@@ -4,12 +4,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.viikko1.ui.theme.Viikko1Theme
 import com.example.viikko1.view.HomeScreen
@@ -20,30 +20,36 @@ import com.example.viikko1.routes.ROUTE_HOME
 import com.example.viikko1.view.CalendarScreen
 import com.example.viikko1.viewmodel.TaskViewModel
 import com.example.viikko1.data.local.AppDatabase
+import com.example.viikko1.data.repository.TaskRepository
 
 
 class MainActivity : ComponentActivity() {
 
+    // Luo tietokanta lazy-patternilla (vasta kun sitä tarvitaan)
+    private val database by lazy {
+        AppDatabase.getDatabase(applicationContext)
+    }
+
+    // Luo Repository, joka käyttää DAO:a tietokantaoperaatioihin
+    private val repository by lazy {
+        TaskRepository(database.taskDao())
+    }
+
+    // Luo ViewModel ViewModelProvider.Factory:n avulla
+    private val viewModel: TaskViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return TaskViewModel(repository) as T
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle ?) {
         super.onCreate(savedInstanceState)
-        
-        // Initialize the database and DAO
-        val database = AppDatabase.getDatabase(applicationContext)
-        val taskDao = database.taskDao()
-
         enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
-            
-            // Create the ViewModel with a Factory to inject the DAO
-            val viewModel: TaskViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        @Suppress("UNCHECKED_CAST")
-                        return TaskViewModel(taskDao) as T
-                    }
-                }
-            )
 
             Viikko1Theme {
                 Scaffold {

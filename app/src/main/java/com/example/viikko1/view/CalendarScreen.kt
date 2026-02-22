@@ -31,7 +31,6 @@ import java.util.Calendar
 @Composable
 fun CalendarScreen(
     viewModel: TaskViewModel,
-    onTaskClick: (Int) -> Unit = {},
     onNavigateHome: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -83,7 +82,7 @@ fun CalendarScreen(
                 items(tasksOfDay) { task ->
                     CalendarTaskCard(
                         task = task,
-                        onTaskClick = { onTaskClick(task.id) }
+                        onTaskClick = { viewModel.openTask(task.id) } // Directly open via ViewModel
                     )
                 }
             }
